@@ -58,7 +58,7 @@ export const activateEmailHTMLContent = (activationLink) => `<!DOCTYPE html>
     <div class="header">
       <img src="https://i.postimg.cc/kg8Lttyn/logo3.png" alt="Activate Your Email">
     </div>
-    <h2>Welcome to SWIRLO!</h2>
+    <h2>Welcome to Bubbli!</h2>
     <p>Thanks for signing up. Please confirm your email address to activate your email.</p>
     <a href="${activationLink}" target="_blank" class="btn">Activate Email</a>
     <p class="footer">If you didn’t sign up, please ignore this email.</p>
@@ -191,8 +191,8 @@ export const orderDetailsHTMLContent = (order) => {
       </div>
 
       <div class="footer">
-        <p>If you have any questions, please contact us at support@swirlo.com</p>
-        <p>&copy; ${new Date().getFullYear()} SWIRLO. All rights reserved.</p>
+        <p>If you have any questions, please contact us at support@bubbli.com</p>
+        <p>&copy; ${new Date().getFullYear()} Bubbli. All rights reserved.</p>
       </div>
     </div>
   </body>
@@ -212,7 +212,7 @@ const transporter = createTransport({
 const sendEmail = async (to, subject, HTMLContent, data) => {
   try {
     await transporter.sendMail({
-      from: `"SWIRLO" <${process.env.USER_NODE_MAILER_EMAIL}>`,
+      from: `"Bubbli" <${process.env.USER_NODE_MAILER_EMAIL}>`,
       to: to || process.env.USER_NODE_MAILER_EMAIL,
       subject: subject,
       html: typeof HTMLContent === "function" ? HTMLContent(data) : HTMLContent,
