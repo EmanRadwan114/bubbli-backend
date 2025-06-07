@@ -28,6 +28,11 @@ userRouter.get("/reviews/me", authenticate([systemRoles.user]), (req, res) => {
   userControllers.getAllUserReviews(req, req.user.id, res);
 });
 
+//* get user addresses for current user ==> user only
+userRouter.get("/address/me", authenticate([systemRoles.user]), (req, res) => {
+  userControllers.getAllAddresses(req, res, req.user.id);
+});
+
 //* get user reviews for a user by user ID ==> admin only
 userRouter.get("/reviews/:id", authenticate([systemRoles.admin]), (req, res) => {
   userControllers.getAllUserReviews(req, req.params.id, res);

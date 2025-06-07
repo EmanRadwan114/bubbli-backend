@@ -46,14 +46,9 @@ const getAllUsers = async (req, res) => {
 // ^---------------------------Get User (ID in Params / ID in Token)------------------------
 const getUser = async (userID, res) => {
   try {
-    if (!userID)
-      return res
-        .status(401)
-        .json({ message: "you are not authorized to get this content" });
+    if (!userID) return res.status(401).json({ message: "you are not authorized to get this content" });
 
-    const user = await User.findById(userID).select(
-      "-updatedAt -password -isEmailActive"
-    );
+    const user = await User.findById(userID).select("-updatedAt -password -isEmailActive");
 
     if (!user) return res.status(404).json({ message: "user is not found" });
 
@@ -66,10 +61,7 @@ const getUser = async (userID, res) => {
 // ^-----------------------------Update User (ID in Params / ID in Token)-----------------------
 const updateUser = async (req, res, userID) => {
   try {
-    if (!userID)
-      return res
-        .status(401)
-        .json({ message: "you are not authorized to get this content" });
+    if (!userID) return res.status(401).json({ message: "you are not authorized to get this content" });
 
     const { oldPassword, newPassword, email, address, name, image } = req.body;
 
@@ -79,18 +71,11 @@ const updateUser = async (req, res, userID) => {
 
     // * change password
     if (oldPassword && newPassword) {
-      const isPasswordCorrect = await bcrypt.compare(
-        oldPassword,
-        user.password
-      );
+      const isPasswordCorrect = await bcrypt.compare(oldPassword, user.password);
 
-      if (!isPasswordCorrect)
-        return res.status(401).json({ message: "incorrect password" });
+      if (!isPasswordCorrect) return res.status(401).json({ message: "incorrect password" });
 
-      user.password = await bcrypt.hash(
-        newPassword,
-        +process.env.USER_PASS_SALT_ROUNDS
-      );
+      user.password = await bcrypt.hash(newPassword, +process.env.USER_PASS_SALT_ROUNDS);
 
       generateAndSendActivationEmail(user);
     }
@@ -106,13 +91,8 @@ const updateUser = async (req, res, userID) => {
     }
 
     // * change address (if new and not already exists)
-    if (address && user.role == "admin")
-      return res.status(400).json({ message: "admin cannot have address" });
-    else if (
-      address &&
-      user.role !== "admin" &&
-      !user.address.includes(address)
-    ) {
+    if (address && user.role == "admin") return res.status(400).json({ message: "admin cannot have address" });
+    else if (address && user.role !== "admin" && !user.address.includes(address)) {
       user.address.push(address);
     }
 
@@ -120,8 +100,7 @@ const updateUser = async (req, res, userID) => {
       // * change email
       const isEmailExists = await User.findOne({ email });
 
-      if (isEmailExists)
-        return res.status(409).json({ message: "this email already exists" });
+      if (isEmailExists) return res.status(409).json({ message: "this email already exists" });
 
       user.email = email;
       user.isEmailActive = false;
@@ -131,13 +110,9 @@ const updateUser = async (req, res, userID) => {
 
     await user.save();
 
-    const updatedUser = await User.findById(userID).select(
-      "-createdAt -updatedAt -password -isEmailActive"
-    );
+    const updatedUser = await User.findById(userID).select("-createdAt -updatedAt -password -isEmailActive");
 
-    res
-      .status(200)
-      .json({ message: "user is updated successfully", data: updatedUser });
+    res.status(200).json({ message: "user is updated successfully", data: updatedUser });
   } catch (err) {
     res.status(500).json({ message: "server error" });
   }
@@ -146,21 +121,14 @@ const updateUser = async (req, res, userID) => {
 // ^-------------------------Delete User (ID in Params / ID in Token)------------------------
 const deleteUser = async (req, res, userID) => {
   try {
-    if (!userID)
-      return res
-        .status(401)
-        .json({ message: "you are not authorized to get this content" });
+    if (!userID) return res.status(401).json({ message: "you are not authorized to get this content" });
 
     const user = await User.findByIdAndDelete(userID).select("name email role");
 
     if (!user) return res.status(404).json({ message: "user is not found" });
 
     if (req.user.id == user.id) {
-      const token = generateToken(
-        { id: user.id },
-        process.env.USER_TOKEN_SECRET_KEY,
-        "5s"
-      );
+      const token = generateToken({ id: user.id }, process.env.USER_TOKEN_SECRET_KEY, "5s");
 
       res.cookie("token", token, {
         httpOnly: true,
@@ -171,9 +139,7 @@ const deleteUser = async (req, res, userID) => {
       });
     }
 
-    res
-      .status(200)
-      .json({ message: "user is deleted successfully", data: user });
+    res.status(200).json({ message: "user is deleted successfully", data: user });
   } catch (err) {
     res.status(500).json({ message: "server error" });
   }
@@ -195,10 +161,7 @@ const getAllUserReviews = async (req, userID, res) => {
       .skip(skip)
       .limit(limit);
 
-    if (reviews.length === 0)
-      return res
-        .status(200)
-        .json({ message: "no reviews added for this user" });
+    if (reviews.length === 0) return res.status(200).json({ message: "no reviews added for this user" });
 
     const userReviews = reviews.map((item) => {
       const { userID, ...rest } = item.toObject();
@@ -220,10 +183,28 @@ const getAllUserReviews = async (req, userID, res) => {
   }
 };
 
+const getAllAddresses = async (req, res, userID) => {
+  try {
+    if (!userID) return res.status(401).json({ message: "you are not authorized to get this content" });
+
+    const user = await User.findById(userID);
+
+    if (!user) return res.status(404).json({ message: "user is not found" });
+
+    // * change address (if new and not already exists)
+    if (user.role == "admin") return res.status(400).json({ message: "admin cannot have address" });
+
+    res.status(200).json({ message: "addresses of user retrieved successfully", data: user.address });
+  } catch (err) {
+    res.status(500).json({ message: "server error" });
+  }
+};
+
 export default {
   getAllUsers,
   getUser,
   updateUser,
   deleteUser,
   getAllUserReviews,
+  getAllAddresses,
 };
