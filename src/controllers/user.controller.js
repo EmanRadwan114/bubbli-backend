@@ -235,10 +235,10 @@ const getCheckoutData = async (req, res, userID) => {
 
     // * change address (if new and not already exists)
     if (user.role == "admin")
-      return res.status(400).json({ message: "admin cannot have address" });
+      return res.status(400).json({ message: "admin cannot checkout" });
 
     res.status(200).json({
-      message: "addresses of user retrieved successfully",
+      message: "success",
       data: { addresses: user.address, phone: user.phone },
     });
   } catch (err) {
