@@ -38,14 +38,14 @@ const updateOrderSchema = {
   properties: {
     shippingStatus: {
       type: "string",
-      enum: ["pending", "prepared", "shipped"],
+      enum: ["pending", "prepared", "shipped", "cancelled"],
     },
   },
   additionalProperties: false,
   errorMessage: {
     properties: {
       shippingStatus:
-        "shipping status must be one of the following: pending, prepared or shipped",
+        "shipping status must be one of the following: pending, prepared, shipped or cancelled",
     },
     additionalProperties: "unexpected extra property in request body",
   },
