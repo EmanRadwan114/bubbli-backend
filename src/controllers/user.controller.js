@@ -221,8 +221,8 @@ const getAllUserReviews = async (req, userID, res) => {
   }
 };
 
-// ^-----------------------------Get User Addresses-----------------------
-const getAllAddresses = async (req, res, userID) => {
+// ^-----------------------------Get Checkout Data-----------------------
+const getCheckoutData = async (req, res, userID) => {
   try {
     if (!userID)
       return res
@@ -239,7 +239,7 @@ const getAllAddresses = async (req, res, userID) => {
 
     res.status(200).json({
       message: "addresses of user retrieved successfully",
-      data: user.address,
+      data: { addresses: user.address, phone: user.phone },
     });
   } catch (err) {
     res.status(500).json({ message: "server error" });
@@ -293,6 +293,6 @@ export default {
   updateUser,
   deleteUser,
   getAllUserReviews,
-  getAllAddresses,
+  getCheckoutData,
   verifyOTP,
 };

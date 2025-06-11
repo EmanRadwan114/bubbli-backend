@@ -37,9 +37,13 @@ userRouter.get("/reviews/me", authenticate([systemRoles.user]), (req, res) => {
 });
 
 //* get user addresses for current user ==> user only
-userRouter.get("/address/me", authenticate([systemRoles.user]), (req, res) => {
-  userControllers.getAllAddresses(req, res, req.user.id);
-});
+userRouter.get(
+  "/checkout-data",
+  authenticate([systemRoles.user]),
+  (req, res) => {
+    userControllers.getCheckoutData(req, res, req.user.id);
+  }
+);
 
 //* phone verification
 userRouter.post(
