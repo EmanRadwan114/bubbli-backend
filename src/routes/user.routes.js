@@ -8,7 +8,11 @@ import systemRoles from "../utils/systemRoles.js";
 const userRouter = new Router({ mergeParams: true });
 
 //* get all users
-userRouter.get("/", authenticate([systemRoles.admin]), userControllers.getAllUsers);
+userRouter.get(
+  "/",
+  authenticate([systemRoles.admin]),
+  userControllers.getAllUsers
+);
 
 //* get, update & delete profile ==> both user and admin
 userRouter
@@ -16,9 +20,13 @@ userRouter
   .get(authenticate(Object.values(systemRoles)), (req, res) => {
     userControllers.getUser(req.user.id, res);
   })
-  .put(authenticate(Object.values(systemRoles)), validateRequestBody(userValidation.updateUserValidation), (req, res) => {
-    userControllers.updateUser(req, res, req.user.id);
-  })
+  .put(
+    authenticate(Object.values(systemRoles)),
+    validateRequestBody(userValidation.updateUserValidation),
+    (req, res) => {
+      userControllers.updateUser(req, res, req.user.id);
+    }
+  )
   .delete(authenticate(Object.values(systemRoles)), (req, res) => {
     userControllers.deleteUser(req, res, req.user.id);
   });
@@ -29,14 +37,29 @@ userRouter.get("/reviews/me", authenticate([systemRoles.user]), (req, res) => {
 });
 
 //* get user addresses for current user ==> user only
-userRouter.get("/address/me", authenticate([systemRoles.user]), (req, res) => {
-  userControllers.getAllAddresses(req, res, req.user.id);
-});
+userRouter.get(
+  "/checkout-data",
+  authenticate([systemRoles.user]),
+  (req, res) => {
+    userControllers.getCheckoutData(req, res, req.user.id);
+  }
+);
+
+//* phone verification
+userRouter.post(
+  "/verify-phone",
+  authenticate([systemRoles.user]),
+  userControllers.verifyOTP
+);
 
 //* get user reviews for a user by user ID ==> admin only
-userRouter.get("/reviews/:id", authenticate([systemRoles.admin]), (req, res) => {
-  userControllers.getAllUserReviews(req, req.params.id, res);
-});
+userRouter.get(
+  "/reviews/:id",
+  authenticate([systemRoles.admin]),
+  (req, res) => {
+    userControllers.getAllUserReviews(req, req.params.id, res);
+  }
+);
 
 //* get & delete user by id ==> admin only
 userRouter

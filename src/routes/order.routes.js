@@ -33,6 +33,9 @@ orderRouter.get(
   orderControllers.getOrdersByMonth
 );
 
+// ^----------------------------------cancel order--------------------------
+orderRouter.post("/cancel/:orderId", orderControllers.cancelOrder);
+
 // ^----------------------------------GET, PUT & DELETE Order By ID--------------------------
 orderRouter
   .route("/:id")

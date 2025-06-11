@@ -27,13 +27,6 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 7500;
 
-// ^--------------------------------create webhook & verify payment--------------------------
-app.post(
-  "/orders/webhook",
-  express.raw({ type: "application/json" }), // Ensures that the raw body is passed for verification
-  orderController.createWebhook
-);
-
 // ^------------------global middlewares
 app.use(cookieParser());
 
@@ -50,6 +43,9 @@ app.use(
 
 // ?handle form submissions (application/x-www-form-urlencoded)
 app.use(express.urlencoded({ extended: true }));
+
+// ^--------------------------------create webhook & verify payment--------------------------
+app.post("/paymob/webhook", orderController.createWebhook);
 
 // ^------------------main routes
 app.use("/auth", authRouter);

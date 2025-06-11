@@ -72,14 +72,18 @@ const orderSchema = new Schema(
 
     orderStatus: {
       type: String,
-      enum: ["paid", "waiting"],
+      enum: ["paid", "waiting", "cancelled"],
       default: "waiting",
     },
 
     shippingStatus: {
       type: String,
-      enum: ["pending", "prepared", "shipped"],
+      enum: ["pending", "prepared", "shipped", "cancelled"],
       default: "pending",
+    },
+    transactionId: {
+      type: String,
+      default: null,
     },
   },
   {
