@@ -37,16 +37,11 @@ const addProductToCart = async (req, res, userID) => {
       (acc, item) => acc + item.quantity,
       0
     );
-    const subtotal = cart.cartItems.reduce((acc, item) => {
-      const product = item.productId;
-      if (!product) return acc;
-      return acc + product.price * item.quantity;
-    }, 0);
+
     res.status(200).json({
       message: "product added to cart successfully",
       data: cart.cartItems,
       totalItems,
-      subtotal,
     });
   } catch (err) {
     res.status(500).json({ message: "server error" });

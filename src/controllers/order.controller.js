@@ -1,21 +1,27 @@
-import Order from "../../db/models/order.model.js";
-import Cart from "./../../db/models/cart.model.js";
-import Coupon from "../../db/models/coupon.model.js";
+// * online payment using paymob
+import {
+  getAuthToken,
+  createOrder as paymobCreateOrder,
+  generatePaymentKey,
+  getIframeUrl,
+  refundPaymob,
+} from "../utils/paymob.js";
 
-// * online payment using stripe
-import Stripe from "stripe";
 import User from "../../db/models/user.model.js";
 import Product from "../../db/models/product.model.js";
+import Coupon from "../../db/models/coupon.model.js";
+import Cart from "../../db/models/cart.model.js";
+import Order from "../../db/models/order.model.js";
 import sendEmail, { orderDetailsHTMLContent } from "../utils/sendEmail.js";
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 //^ ------------------------------------------ create order ------------------------------------------
+
+const SHIPPING_PRICE = 50;
+
 export const createOrder = async (req, res) => {
   let { shippingAddress, paymentMethod, couponCode, phone } = req.body;
-  const SHIPPING_PRICE = 50; // default shipping price
 
   try {
-    // 1. Get cart with populated products
     const cart = await Cart.findOne({ userID: req.user.id }).populate(
       "cartItems.productId"
     );
@@ -23,23 +29,19 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Your cart is empty" });
     }
 
-    // 2. Validate coupon if provided
+    // Coupon validation
     let coupon = null;
     let couponDiscountPct = 0;
     if (couponCode) {
       coupon = await Coupon.findOne({ CouponCode: couponCode });
-      if (!coupon) {
-        return res.status(400).json({ message: "Coupon not found." });
-      }
+      if (!coupon) return res.status(400).json({ message: "Coupon not found" });
       if (coupon.CouponUsers.includes(req.user.id)) {
-        return res
-          .status(400)
-          .json({ message: "You cannot use this coupon more than once." });
+        return res.status(400).json({ message: "Coupon already used" });
       }
       couponDiscountPct = coupon.CouponPercentage || 0;
     }
 
-    // 3. Calculate total price before discount (sum of discounted product prices * quantity)
+    // Price calculation
     let totalPriceBeforeDiscount = 0;
     for (const item of cart.cartItems) {
       const product = item.productId;
@@ -48,11 +50,9 @@ export const createOrder = async (req, res) => {
       totalPriceBeforeDiscount += discountedPrice * item.quantity;
     }
 
-    // 4. Calculate total price after coupon discount (apply coupon on totalPriceBeforeDiscount)
-    const totalPriceAfterDiscount =
+    const totalPriceWithShipping =
       totalPriceBeforeDiscount * (1 - couponDiscountPct / 100) + SHIPPING_PRICE;
 
-    // 5. Build order items array including price details
     const orderItems = cart.cartItems.map((i) => {
       const product = i.productId;
       const discountedPrice =
@@ -66,7 +66,6 @@ export const createOrder = async (req, res) => {
       };
     });
 
-    // 6. Create and save order
     const order = new Order({
       userID: req.user.id,
       orderItems,
@@ -76,23 +75,21 @@ export const createOrder = async (req, res) => {
       couponCode: couponCode || null,
       shippingPrice: SHIPPING_PRICE,
       totalPriceBeforeDiscount,
-      totalPrice: totalPriceAfterDiscount,
+      totalPriceAfterDiscount: totalPriceWithShipping - SHIPPING_PRICE,
+      totalPrice: totalPriceWithShipping,
       orderStatus: "waiting",
       shippingStatus: "pending",
     });
 
     await order.save();
 
-    // 7. Add shipping address to user's address list (optional, avoid duplicates)
     const user = await User.findById(req.user.id);
     if (!user.address.includes(shippingAddress)) {
       user.address.push(shippingAddress);
       await user.save();
     }
 
-    // 8. Handle payment methods
     if (paymentMethod === "cash") {
-      // Mark coupon used if applied
       if (couponCode) {
         await Coupon.updateOne(
           { CouponCode: couponCode },
@@ -100,7 +97,6 @@ export const createOrder = async (req, res) => {
         );
       }
 
-      // Decrement stock & increment order count for each product
       for (const item of cart.cartItems) {
         const product = item.productId;
         if (product.stock > 0) {
@@ -110,20 +106,18 @@ export const createOrder = async (req, res) => {
         }
       }
 
-      // Send confirmation email
       await sendEmail(
         user.email,
-        "Your Order Confirmation",
+        "Your Order Invoice",
         orderDetailsHTMLContent,
         {
           cartItems: cart.cartItems,
-          totalPrice: totalPriceAfterDiscount,
+          totalPrice: totalPriceWithShipping,
           createdAt: order.createdAt,
           _id: order._id,
         }
       );
 
-      // Clear cart
       cart.cartItems = [];
       await cart.save();
 
@@ -132,47 +126,53 @@ export const createOrder = async (req, res) => {
         .json({ message: "Order placed successfully.", data: order });
     }
 
-    // 9. Handle online payment with Stripe checkout session
-    if (paymentMethod === "online") {
-      const lineItems = [
-        {
-          price_data: {
-            currency: "egp",
-            product_data: {
-              name: "Order Total (after discount)",
-            },
-            unit_amount: Math.round(totalPriceAfterDiscount * 100), // amount in piasters
-          },
-          quantity: 1,
-        },
-      ];
+    //* === Online Payment with Paymob ===
+    const billingData = {
+      apartment: "NA",
+      email: user.email,
+      floor: "NA",
+      first_name: user.name?.split(" ")[0] || "First",
+      last_name: user.name?.split(" ")[1] || "Last",
+      phone_number: phone,
+      building: "NA",
+      city: "Cairo",
+      country: "EG",
+      state: "NA",
+      street: shippingAddress,
+    };
 
-      let session;
-      try {
-        session = await stripe.checkout.sessions.create({
-          payment_method_types: ["card"],
-          line_items: lineItems,
-          mode: "payment",
-          customer_email: user.email,
-          metadata: {
-            orderId: order._id.toString(),
-            couponCode: couponCode || "",
-          },
-          success_url: `${process.env.FRONT_URL}/order-confirmation/${order._id}`,
-          cancel_url: `${process.env.FRONT_URL}/cart`,
-        });
-      } catch (stripeErr) {
-        return res.status(502).json({
-          message: "Payment gateway error",
-          detail: stripeErr.message,
-        });
-      }
+    const items = cart.cartItems.map((item) => {
+      const product = item.productId;
+      const discountedPrice =
+        product.price * (1 - (product.discount || 0) / 100);
 
-      return res.status(200).json({
-        message: "Checkout session created successfully.",
-        sessionId: session.id,
-      });
-    }
+      return {
+        name: product.title,
+        amount_cents: Math.round(discountedPrice * 100), // Paymob uses cents
+        quantity: item.quantity,
+      };
+    });
+
+    const authToken = await getAuthToken();
+    const paymobOrder = await paymobCreateOrder(
+      authToken,
+      Math.round(totalPriceWithShipping * 100),
+      items,
+      order
+    );
+    const paymentKey = await generatePaymentKey(
+      authToken,
+      paymobOrder.id,
+      Math.round(totalPriceWithShipping * 100),
+      billingData
+    );
+    const iframeUrl = getIframeUrl(paymentKey);
+
+    return res.status(200).json({
+      message: "Paymob payment initiated.",
+      iframeUrl,
+      orderId: order._id,
+    });
   } catch (err) {
     console.error("Order creation error:", err);
     return res
@@ -183,52 +183,32 @@ export const createOrder = async (req, res) => {
 
 //^ --------------------------------------craete webhook---------------------------------------
 export const createWebhook = async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-  let event;
+  const { obj } = req.body;
 
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error("Webhook error:", err);
-    return res.status(400).json({ error: `Webhook Error: ${err.message}` });
-  }
+  if (obj.success && obj.order && obj.order.merchant_order_id) {
+    const orderId = obj.order.merchant_order_id;
+    const transactionId = obj.id; // Get transaction ID for refund later
 
-  if (event.type === "checkout.session.completed") {
     try {
-      const session = event.data.object;
-
-      // Validate required metadata
-      if (!session.metadata || !session.metadata.orderId) {
-        return res.status(400).json({ error: "Missing orderId in metadata" });
-      }
-
-      const couponCode = session.metadata.couponCode;
-      const orderId = session.metadata.orderId;
-
-      // 1. Update order status to 'paid'
       const updatedOrder = await Order.findByIdAndUpdate(
         orderId,
-        { orderStatus: "paid" },
+        {
+          orderStatus: "paid",
+          transactionId: transactionId,
+        },
         { new: true }
       );
 
-      if (!updatedOrder) {
-        return res.status(404).json({ error: "Order not found." });
-      }
+      if (!updatedOrder)
+        return res.status(404).json({ error: "Order not found" });
 
-      // 2. Record coupon use if any
-      if (couponCode) {
+      if (updatedOrder.couponCode) {
         await Coupon.updateOne(
-          { CouponCode: couponCode },
+          { CouponCode: updatedOrder.couponCode },
           { $push: { CouponUsers: updatedOrder.userID } }
         );
       }
 
-      // 3. Decrement stock and increment order count for each product in the order
       for (const orderItem of updatedOrder.orderItems) {
         const product = await Product.findById(orderItem.productId);
         if (product && product.stock > 0) {
@@ -238,10 +218,7 @@ export const createWebhook = async (req, res) => {
         }
       }
 
-      // 4. Find user and send order confirmation email
       const user = await User.findById(updatedOrder.userID);
-
-      // 5. Empty user's cart after successful payment
       const cart = await Cart.findOne({ userID: updatedOrder.userID }).populate(
         "cartItems.productId"
       );
@@ -258,24 +235,23 @@ export const createWebhook = async (req, res) => {
             _id: updatedOrder._id,
           }
         );
-
         cart.cartItems = [];
         await cart.save();
       }
 
-      return res.json({
+      return res.status(200).json({
         success: true,
-        message: "Order marked as paid and cart emptied.",
+        message: "Order marked as paid",
+        received: true,
       });
-    } catch (error) {
-      console.error("Webhook processing error:", error);
-      return res
-        .status(500)
-        .json({ error: "Server Error: Error processing webhook" });
+    } catch (err) {
+      console.error("Webhook error:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
     }
   }
 
-  return res.json({ received: true });
+  // For unsuccessful payments or invalid structure
+  return res.status(200).json({ received: true });
 };
 
 // ^---------------------------------GET All Orders--------------------------
@@ -552,7 +528,52 @@ const getOrdersByMonth = async (req, res) => {
 };
 
 // ^----------------------------------Cancel Order--------------------------
-const cancelOrder = async (req, res) => {}; //additional feature
+export const cancelOrder = async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: "Order not found." });
+
+    // 2. Check if it's within 14 days
+    const now = new Date();
+    const orderDate = new Date(order.createdAt);
+    const daysPassed = (now - orderDate) / (1000 * 60 * 60 * 24);
+
+    if (daysPassed > 14) {
+      return res
+        .status(400)
+        .json({ message: "Refund period has expired (14 days)." });
+    }
+
+    // 3. Handle refund logic
+    if (order.paymentMethod === "online") {
+      // Call Paymob Refund API (you’ll need the transaction ID)
+      const refundResponse = await refundPaymob(
+        order.transactionId,
+        order.totalPrice
+      );
+      if (!refundResponse.success) {
+        return res
+          .status(500)
+          .json({ message: "Refund failed", details: refundResponse.error });
+      }
+    }
+
+    // 4. Update order status
+    order.orderStatus = "cancelled";
+    order.shippingStatus = "cancelled";
+    await order.save();
+
+    return res.status(200).json({
+      message:
+        "Order cancelled and refunded if paid online or you will be contacted if paid cash",
+    });
+  } catch (err) {
+    console.error("Cancel order error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 
 export default {
   getAllOrders,

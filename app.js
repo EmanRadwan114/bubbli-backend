@@ -21,13 +21,6 @@ import orderController from "./src/controllers/order.controller.js";
 const app = express();
 const PORT = process.env.PORT || 7500;
 
-// ^--------------------------------create webhook & verify payment--------------------------
-app.post(
-  "/orders/webhook",
-  express.raw({ type: "application/json" }), // Ensures that the raw body is passed for verification
-  orderController.createWebhook
-);
-
 // ^------------------global middlewares
 app.use(cookieParser());
 
@@ -47,6 +40,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // ?parse incoming JSON payloads (application/json)
 app.use(express.json());
+
+// ^--------------------------------create webhook & verify payment--------------------------
+app.post("/paymob/webhook", orderController.createWebhook);
 
 // ^------------------main routes
 app.use("/auth", authRouter);
