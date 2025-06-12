@@ -40,7 +40,7 @@ export const activateEmailHTMLContent = (activationLink) => `<!DOCTYPE html>
       display: inline-block;
       margin-top: 20px;
       padding: 7px 30px;
-      background-color: #0B5D5D;
+      background-color:  #c74029;
       color: #fff !important;
       text-decoration: none !important;
       border-radius: 5px;
@@ -56,7 +56,7 @@ export const activateEmailHTMLContent = (activationLink) => `<!DOCTYPE html>
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://i.postimg.cc/kg8Lttyn/logo3.png" alt="Activate Your Email">
+      <img src="https://i.postimg.cc/Rh8HC13n/bubbli-logo.jpg" alt="Activate Your Email">
     </div>
     <h2>Welcome to Bubbli!</h2>
     <p>Thanks for signing up. Please confirm your email address to activate your email.</p>
@@ -112,6 +112,7 @@ export const orderDetailsHTMLContent = (order) => {
         justify-content: space-between;
         padding: 10px 0;
         border-bottom: 1px solid #e0e0e0;
+        gap:5px;
       }
       .order-item:last-child {
         border-bottom: none;
@@ -126,6 +127,7 @@ export const orderDetailsHTMLContent = (order) => {
         height: 50px;
         object-fit: cover;
         border-radius: 4px;
+        margin-right:15px;
       }
       .total {
         font-weight: bold;
@@ -154,7 +156,7 @@ export const orderDetailsHTMLContent = (order) => {
   <body>
     <div class="container">
     <div class="header">
-    <img src="https://i.postimg.cc/kg8Lttyn/logo3.png" alt="Company Logo" class="logo">
+    <img src="https://i.postimg.cc/Rh8HC13n/bubbli-logo.jpg" alt="Company Logo" class="logo">
         <h1>Order Confirmation</h1>
         <p>Thank you for your purchase!</p>
         </div>

@@ -16,6 +16,9 @@ import reviewRouter from "./src/routes/review.routes.js";
 import userRouter from "./src/routes/user.routes.js";
 import wishlistRouter from "./src/routes/wishlist.routes.js";
 import orderController from "./src/controllers/order.controller.js";
+import { getAdminStats } from "./src/controllers/admin.controller.js";
+import authenticate from "./src/middlewares/authentication.middleware.js";
+import systemRoles from "./src/utils/systemRoles.js";
 
 // ^------------------create server
 const app = express();
@@ -54,6 +57,13 @@ app.use("/cart", cartRouter);
 app.use("/orders", orderRouter);
 app.use("/reviews", reviewRouter);
 app.use("/wishlist", wishlistRouter);
+
+// ^------------------admin dashboard stats
+app.get(
+  "/admins/dashboard-stats",
+  authenticate([systemRoles.admin]),
+  getAdminStats
+);
 
 // ^------------------error handling
 app.use((req, res, next) => {
