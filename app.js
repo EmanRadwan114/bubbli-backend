@@ -16,12 +16,18 @@ import reviewRouter from "./src/routes/review.routes.js";
 import userRouter from "./src/routes/user.routes.js";
 import wishlistRouter from "./src/routes/wishlist.routes.js";
 import orderController from "./src/controllers/order.controller.js";
+import chatbotRouter from "./src/routes/chatbot.routes.js";
+import mongoose from "mongoose";
+import listEndpoints from "express-list-endpoints";
 import { getAdminStats } from "./src/controllers/admin.controller.js";
 import authenticate from "./src/middlewares/authentication.middleware.js";
 import systemRoles from "./src/utils/systemRoles.js";
 
 // ^------------------create server
 const app = express();
+// ?parse incoming JSON payloads (application/json)
+app.use(express.json());
+
 const PORT = process.env.PORT || 7500;
 
 // ^------------------global middlewares
@@ -41,9 +47,6 @@ app.use(
 // ?handle form submissions (application/x-www-form-urlencoded)
 app.use(express.urlencoded({ extended: true }));
 
-// ?parse incoming JSON payloads (application/json)
-app.use(express.json());
-
 // ^--------------------------------create webhook & verify payment--------------------------
 app.post("/paymob/webhook", orderController.createWebhook);
 
@@ -57,6 +60,10 @@ app.use("/cart", cartRouter);
 app.use("/orders", orderRouter);
 app.use("/reviews", reviewRouter);
 app.use("/wishlist", wishlistRouter);
+
+// ^------------------- AI ChatBot
+
+app.use("/", chatbotRouter);
 
 // ^------------------admin dashboard stats
 app.get(
@@ -75,7 +82,23 @@ app.use((req, res, next) => {
 
 app.use(globalErrHandler);
 
-// ^------------------listen to requests
-app.listen(PORT, () => {
-  console.log(`http://127.0.0.1:${PORT}`);
-});
+mongoose
+  .connect(process.env.MONGODB_CONNECTION_URL, {
+    dbName: "bubbli",
+  })
+  .then(() => {
+    console.log("Database connected successfully.");
+    app.listen(PORT, () => {
+      console.log(`Server listening at http://127.0.0.1:${PORT}`);
+
+      // ✅ Safe and clean route listing
+      const endpoints = listEndpoints(app);
+      console.log("Registered routes:");
+      endpoints.forEach((ep) => {
+        console.log(`${ep.methods.join(", ")} ${ep.path}`);
+      });
+    });
+  })
+  .catch((err) => {
+    console.error("Database connection error:", err);
+  });
