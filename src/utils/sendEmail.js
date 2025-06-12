@@ -56,7 +56,7 @@ export const activateEmailHTMLContent = (activationLink) => `<!DOCTYPE html>
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://i.postimg.cc/Rh8HC13n/bubbli-logo.jpg" alt="Activate Your Email">
+      <img src="https://i.postimg.cc/vTPp4TMn/bubbli-logo.jpg" alt="Activate Your Email">
     </div>
     <h2>Welcome to Bubbli!</h2>
     <p>Thanks for signing up. Please confirm your email address to activate your email.</p>
@@ -156,7 +156,7 @@ export const orderDetailsHTMLContent = (order) => {
   <body>
     <div class="container">
     <div class="header">
-    <img src="https://i.postimg.cc/Rh8HC13n/bubbli-logo.jpg" alt="Company Logo" class="logo">
+    <img src="https://i.postimg.cc/vTPp4TMn/bubbli-logo.jpg" alt="Company Logo" class="logo">
         <h1>Order Confirmation</h1>
         <p>Thank you for your purchase!</p>
         </div>
