@@ -11,21 +11,19 @@ const updateUserSchema = {
   properties: {
     oldPassword: {
       type: "string",
-      pattern:
-        "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@_$-])[A-Za-z\\d@_$-]{8,}$",
+      pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@_$-])[A-Za-z\\d@_$-]{8,}$",
     },
     newPassword: {
       type: "string",
-      pattern:
-        "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@_$-])[A-Za-z\\d@_$-]{8,}$",
+      pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@_$-])[A-Za-z\\d@_$-]{8,}$",
     },
     email: {
       type: "string",
       format: "email",
     },
     address: {
-      type: "string",
-      minLength: 3,
+      type: "array",
+      minLength: 0,
     },
     name: {
       type: "string",
@@ -46,10 +44,8 @@ const updateUserSchema = {
   additionalProperties: false,
   errorMessage: {
     properties: {
-      oldPassword:
-        "password must be at least 8 characters, including uppercase, lowercase, a number, and a special character.",
-      newPassword:
-        "password must be at least 8 characters, including uppercase, lowercase, a number, and a special character.",
+      oldPassword: "password must be at least 8 characters, including uppercase, lowercase, a number, and a special character.",
+      newPassword: "password must be at least 8 characters, including uppercase, lowercase, a number, and a special character.",
       email: "please enter a valid email address.",
       address: "address must be at least 5 characters.",
       name: "name must be at least 3 characters.",
