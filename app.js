@@ -19,6 +19,9 @@ import orderController from "./src/controllers/order.controller.js";
 import chatbotRouter from "./src/routes/chatbot.routes.js";
 import mongoose from "mongoose";
 import listEndpoints from "express-list-endpoints";
+import { getAdminStats } from "./src/controllers/admin.controller.js";
+import authenticate from "./src/middlewares/authentication.middleware.js";
+import systemRoles from "./src/utils/systemRoles.js";
 
 // ^------------------create server
 const app = express();
@@ -61,6 +64,13 @@ app.use("/wishlist", wishlistRouter);
 // ^------------------- AI ChatBot
 
 app.use("/", chatbotRouter);
+
+// ^------------------admin dashboard stats
+app.get(
+  "/admins/dashboard-stats",
+  authenticate([systemRoles.admin]),
+  getAdminStats
+);
 
 // ^------------------error handling
 app.use((req, res, next) => {
