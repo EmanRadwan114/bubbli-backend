@@ -226,7 +226,7 @@ export const createWebhook = async (req, res) => {
       if (cart) {
         await sendEmail(
           user.email,
-          "Your Order Confirmation",
+          "Your Order Invoice",
           orderDetailsHTMLContent,
           {
             cartItems: cart.cartItems,
