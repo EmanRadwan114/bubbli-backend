@@ -5,7 +5,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Replace with your OpenRouter key
   baseURL: "https://openrouter.ai/api/v1",
   defaultHeaders: {
-    "HTTP-Referer": "http://localhost:5173/", // your frontend domain
+    "HTTP-Referer": process.env.FRONT_URL, // your frontend domain
     "X-Title": "Bubbli AI Chatbot", // custom name shown in OpenRouter dashboard
   },
 });
