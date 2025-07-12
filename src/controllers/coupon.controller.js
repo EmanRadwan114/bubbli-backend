@@ -26,14 +26,12 @@ const getAllCoupons = async (req, res) => {
     if (coupons.length === 0) {
       return res.status(200).json({ message: "no coupons found" });
     }
-    res
-      .status(200)
-      .json({
-        message: "success",
-        data: coupons,
-        currentPage: page,
-        totalPages,
-      });
+    res.status(200).json({
+      message: "success",
+      data: coupons,
+      currentPage: page,
+      totalPages,
+    });
   } catch (err) {
     res.status(500).json({ message: "server error" });
   }
