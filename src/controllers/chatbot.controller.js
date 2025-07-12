@@ -73,7 +73,7 @@ export const handleChatRequest = async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are a helpful eCommerce chatbot. If the user asks about FAQs or store policies, answer directly. If they ask about products, use this product info: ${
+          content: `You are a helpful eCommerce chatbot. Reply in 1-2 short sentences only. Be concise. If the user asks about FAQs or store policies, answer directly. If they ask about products, use this product info: ${
             productInfo || "No product matched."
           }`,
         },

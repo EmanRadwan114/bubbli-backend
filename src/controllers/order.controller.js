@@ -413,11 +413,14 @@ const updateOrderByID = async (req, res) => {
         message: `shipping status is already ${order.shippingStatus}`,
       });
 
-    if (shippingStatus !== "shipped") {
-      order.shippingStatus = shippingStatus;
-    } else if (shippingStatus === "shipped") {
+    if (shippingStatus === "shipped") {
       order.shippingStatus = shippingStatus;
       order.orderStatus = "paid";
+    } else if (shippingStatus === "cancelled") {
+      order.shippingStatus = shippingStatus;
+      order.orderStatus = "cancelled";
+    } else {
+      order.shippingStatus = shippingStatus;
     }
 
     await order.save();
