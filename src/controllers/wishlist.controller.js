@@ -35,8 +35,7 @@ const getWishlist = async (req, res) => {
     const skip = (page - 1) * limit;
     const all = req.query.all || false;
     const user = await User.findById(req.user?.id).populate("wishlist");
-    if (!user)
-      return res.status(200).json({ message: "User not found", data: [] });
+    if (!user) return res.status(404).json({ message: "User not found" });
     let productsWishlist;
     let total = user.wishlist.length;
     if (all) {

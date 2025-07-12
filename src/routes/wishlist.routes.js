@@ -10,7 +10,7 @@ const wishlistRouter = new Router();
 //* get all wishlist of current user
 wishlistRouter
   .route("/")
-  .get(wishlistControllers.getWishlist)
+  .get(authenticate([systemRoles.user]), wishlistControllers.getWishlist)
   .delete(authenticate([systemRoles.user]), wishlistControllers.clearWishlist);
 wishlistRouter
   .route("/:pid")
