@@ -34,14 +34,14 @@ const getWishlist = async (req, res) => {
     const limit = parseInt(req.query.limit) || 8;
     const skip = (page - 1) * limit;
     const all = req.query.all || false;
-    const user = await User.findById(req.user.id).populate("wishlist");
+    const user = await User.findById(req.user?.id).populate("wishlist");
     if (!user) return res.status(404).json({ message: "User not found" });
     let productsWishlist;
     let total = user.wishlist.length;
     if (all) {
-      productsWishlist = user.wishlist;
+      productsWishlist = user?.wishlist;
     } else {
-      productsWishlist = user.wishlist.slice(skip, skip + limit);
+      productsWishlist = user?.wishlist.slice(skip, skip + limit);
     }
 
     let finalProducts = [];
