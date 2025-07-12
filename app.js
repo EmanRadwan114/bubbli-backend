@@ -49,6 +49,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ^--------------------------------create webhook & verify payment--------------------------
 app.post("/paymob/webhook", orderController.createWebhook);
+app.get("/paymob/webhook", orderController.redirectAfterPayment);
 
 // ^------------------main routes
 app.use("/auth", authRouter);

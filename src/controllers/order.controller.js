@@ -254,6 +254,18 @@ export const createWebhook = async (req, res) => {
   return res.status(200).json({ received: true });
 };
 
+export const redirectAfterPayment = async (req, res) => {
+  const { success, merchant_order_id } = req.query;
+
+  if (success === "true") {
+    return res.redirect(
+      `https://bubbli-gifts.netlify.app/order-confirmation/${merchant_order_id}`
+    );
+  } else {
+    return res.redirect(`https://bubbli-gifts.netlify.app/payment-failed`);
+  }
+};
+
 // ^---------------------------------GET All Orders--------------------------
 const getAllOrders = async (req, res) => {
   try {
@@ -588,4 +600,5 @@ export default {
   createWebhook,
   getOrdersByMonth,
   cancelOrder,
+  redirectAfterPayment,
 };
