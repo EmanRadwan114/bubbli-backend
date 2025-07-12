@@ -35,6 +35,7 @@ export const generatePaymentKey = async (
     billing_data: billingdata,
     currency: "EGP",
     integration_id: process.env.PAYMOB_INTEGRATION_ID,
+    return_url: `https://bubbli-gifts.netlify.app/order-confirmation/${orderId}`, // 👈 Redirects user here after payment
   });
 
   return response.data.token;
