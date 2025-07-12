@@ -43,47 +43,60 @@ export const handleChatRequest = async (req, res) => {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: "No message provided" });
 
-  // console.log("API KEY:", process.env.OPENAI_API_KEY); // for debugging only
-
   try {
     const lowerMessage = message.toLowerCase();
 
-    // 1. Match against FAQs
+    // 1️⃣ Check FAQs first
     const matchedFaq = FAQs.find((faq) =>
       lowerMessage.includes(faq.q.toLowerCase())
     );
     if (matchedFaq) return res.json({ reply: matchedFaq.a });
 
-    // 2. Try to match product by title or description
-    const product = await Product.findOne({
-      $or: [
-        { title: new RegExp(message, "i") },
-        { description: new RegExp(message, "i") },
-      ],
-    });
+    // 2️⃣ Build flexible search for product info
+    const searchTerms = lowerMessage
+      .split(" ")
+      .map((term) => term.trim())
+      .filter((term) => term.length > 0);
 
+    const orQueries = searchTerms.map((term) => ({
+      $or: [
+        { title: { $regex: term, $options: "i" } },
+        { description: { $regex: term, $options: "i" } },
+        { color: { $regex: term, $options: "i" } },
+        { material: { $regex: term, $options: "i" } },
+      ],
+    }));
+
+    // Find the first product matching ANY of these terms
     let productInfo = "";
-    if (product) {
-      productInfo = `Here is a product you might like:\n\n🛍️ *${product.title}*\n💬 ${product.description}\n💰 Price: $${product.price}\n🚚 In stock: ${product.stock}`;
+    let product = null;
+
+    if (orQueries.length > 0) {
+      product = await Product.findOne({ $or: orQueries });
     }
 
-    // 3. Use OpenAI to respond more naturally
+    if (product) {
+      productInfo = `*${product.title}* - ${product.description}. Price: $${product.price}, Stock: ${product.stock}.`;
+    } else {
+      productInfo = "No product matched.";
+    }
+
+    // 3️⃣ Call AI for final answer
     const completion = await openai.chat.completions.create({
       model: "mistralai/mistral-7b-instruct:free",
       messages: [
         {
           role: "system",
-          content: `You are a helpful eCommerce chatbot. Reply in 1-2 short sentences only. Be concise. If the user asks about FAQs or store policies, answer directly. If they ask about products, use this product info: ${
-            productInfo || "No product matched."
-          }`,
+          content: `You are a helpful eCommerce chatbot. Always respond in under 150 characters. Be extremely concise. Avoid extra words. Summarize if needed. If the user asks about FAQs or store policies, answer directly. If they ask about products, use this product info: ${productInfo}`,
         },
-        { role: "user", content: message },
+        {
+          role: "user",
+          content: `${message} (Respond in under 150 characters.)`,
+        },
       ],
     });
 
     const reply = completion.choices[0].message.content;
-    // console.log("AI Reply:", reply);
-
     return res.json({ reply });
   } catch (err) {
     console.error("Chatbot Error:", err);
