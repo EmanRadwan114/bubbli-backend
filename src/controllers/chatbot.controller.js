@@ -14,7 +14,7 @@ const openai = new OpenAI({
 const FAQs = [
   {
     q: "return policy",
-    a: "We offer 30-day returns for all items in original condition.",
+    a: "We offer 14-day returns for all items in original condition.",
   },
   {
     q: "shipping",
@@ -23,7 +23,7 @@ const FAQs = [
   { q: "payment methods", a: "We accept credit cards, PayPal, and Apple Pay." },
   {
     q: "cancel order",
-    a: "You can cancel an order within 24 hours before it ships.",
+    a: "You can cancel an order.",
   },
   {
     q: "track order",
