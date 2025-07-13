@@ -208,6 +208,7 @@ const filterProducts = async (req, res) => {
       const titleFilters = title
         .split(", ")
         .map((filter) => filter.toLowerCase());
+      console.log(title);
 
       // Create an OR condition for each title filter
       filterQuery.$or = [
