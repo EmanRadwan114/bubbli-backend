@@ -71,7 +71,9 @@ export const refundPaymob = async (transactionId, amountCents) => {
       return { success: false, error: refundResponse.data };
     }
   } catch (err) {
+    console.log(amountCents);
     console.error("Refund API error:", err.response?.data || err.message);
+
     return { success: false, error: err.response?.data || err.message };
   }
 };

@@ -148,7 +148,7 @@ export const createOrder = async (req, res) => {
 
       return {
         name: product.title,
-        amount_cents: Math.round(discountedPrice * 100), // Paymob uses cents
+        amount_cents: Math.round(+discountedPrice * 100), // Paymob uses cents
         quantity: item.quantity,
       };
     });
@@ -156,14 +156,14 @@ export const createOrder = async (req, res) => {
     const authToken = await getAuthToken();
     const paymobOrder = await paymobCreateOrder(
       authToken,
-      Math.round(totalPriceWithShipping * 100),
+      Math.round(+totalPriceWithShipping * 100),
       items,
       order
     );
     const paymentKey = await generatePaymentKey(
       authToken,
       paymobOrder.id,
-      Math.round(totalPriceWithShipping * 100),
+      Math.round(+totalPriceWithShipping * 100),
       billingData
     );
     const iframeUrl = getIframeUrl(paymentKey);
@@ -564,9 +564,11 @@ export const cancelOrder = async (req, res) => {
     // 3. Handle refund logic
     if (order.paymentMethod === "online") {
       // Call Paymob Refund API (you’ll need the transaction ID)
+      console.log(Math.round(+order.totalPrice));
+
       const refundResponse = await refundPaymob(
         order.transactionId,
-        order.totalPrice
+        Math.round(+order.totalPrice)
       );
       if (!refundResponse.success) {
         return res
