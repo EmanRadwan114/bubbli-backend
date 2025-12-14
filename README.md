@@ -11,7 +11,7 @@ This repository contains the **backend** of **Bubbli**, responsible for authenti
 * User & admin role management
 * Gift & category management
 * Orders & order tracking
-* Payment processing
+* Payment processing using Paymob
 * Chatbot integration
 * Admin analytics & dashboard APIs
 * Email confirmation feature
