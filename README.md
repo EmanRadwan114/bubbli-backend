@@ -23,5 +23,3 @@ This repository contains the **backend** of **Bubbli**, responsible for authenti
 * **Node.js**
 * **Express.js**
 * **MongoDB** (Mongoose)
-
-
