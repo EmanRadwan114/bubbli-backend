@@ -1,4 +1,4 @@
-import { createTransport } from "nodemailer";
+import axios from "axios";
 
 //* HTML content
 export const activateEmailHTMLContent = (activationLink) => `<!DOCTYPE html>
@@ -202,31 +202,47 @@ export const orderDetailsHTMLContent = (order) => {
 `;
 };
 
-//* create nodemailer transporter
-const transporter = createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
-
+//* send email function using Brevo HTTPS REST API (Port 443 - never blocked by cloud firewalls)
 const sendEmail = async (to, subject, HTMLContent, data) => {
   try {
-    await transporter.sendMail({
-      from: `"Bubbli" <${process.env.USER_NODE_MAILER_EMAIL}>`,
-      to: to || process.env.USER_NODE_MAILER_EMAIL,
-      subject: subject,
-      html: typeof HTMLContent === "function" ? HTMLContent(data) : HTMLContent,
-    });
+    const html =
+      typeof HTMLContent === "function" ? HTMLContent(data) : HTMLContent;
+    const senderEmail =
+      process.env.BREVO_SENDER_EMAIL ||
+      process.env.USER_NODE_MAILER_EMAIL ||
+      "wppractic@gmail.com";
+    const recipientEmail = to || senderEmail;
+
+    await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: {
+          name: "Bubbli",
+          email: senderEmail,
+        },
+        to: [
+          {
+            email: recipientEmail,
+          },
+        ],
+        subject: subject,
+        htmlContent: html,
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "content-type": "application/json",
+          accept: "application/json",
+        },
+      }
+    );
+
     return true;
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error(
+      "Error sending email via Brevo API:",
+      error.response ? error.response.data : error.message
+    );
     throw error; // Re-throw the error for handling at a higher level
   }
 };
