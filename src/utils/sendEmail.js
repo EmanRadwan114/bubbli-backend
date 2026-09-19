@@ -165,7 +165,7 @@ export const orderDetailsHTMLContent = (order) => {
         <h2>Order Summary</h2>
         <p><strong>Order ID:</strong> ${order._id}</p>
         <p><strong>Order Date:</strong> ${new Date(
-          order.createdAt
+          order.createdAt,
         )?.toLocaleDateString()}</p>
 
         <div>
@@ -181,7 +181,7 @@ export const orderDetailsHTMLContent = (order) => {
                 ${item.quantity} × ${item.productId?.price} EGP
               </div>
             </div>
-          `
+          `,
             )
             .join("")}
         </div>
@@ -204,12 +204,12 @@ export const orderDetailsHTMLContent = (order) => {
 
 //* create nodemailer transporter
 const transporter = createTransport({
-  host: "smtp.gmail.com",
+  host: "smtp-relay.brevo.com",
   port: 587,
   secure: false,
   auth: {
-    user: process.env.USER_NODE_MAILER_EMAIL,
-    pass: process.env.USER_APP_NODE_MAILER_PASS,
+    user: process.env.BREVO_USER,
+    pass: process.env.BREVO_PASS,
   },
   tls: {
     rejectUnauthorized: false,
