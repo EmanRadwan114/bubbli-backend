@@ -35,7 +35,15 @@ const RegisterUser = async (req, res) => {
     await newUser.save();
 
     //* 4- generate token for email activation
-    await generateAndSendActivationEmail(newUser);
+    try {
+      await generateAndSendActivationEmail(newUser);
+    } catch (emailErr) {
+      await User.findByIdAndDelete(newUser._id);
+      return res.status(500).json({
+        message:
+          "Failed to send confirmation email. Please check your email configuration and try again.",
+      });
+    }
 
     //* 6- send success msg
     res.status(201).json({
