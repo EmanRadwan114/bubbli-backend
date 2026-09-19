@@ -31,7 +31,7 @@ const userSchema = new Schema(
 
     address: [{ type: String }],
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true, versionKey: false },
 );
 
 //* Role-based wishlist validation

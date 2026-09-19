@@ -26,7 +26,7 @@ const RegisterUser = async (req, res) => {
     //* 2- hashing password
     const hashedPassword = await bcrypt.hash(
       password,
-      +process.env.USER_PASS_SALT_ROUNDS
+      +process.env.USER_PASS_SALT_ROUNDS,
     );
 
     //* 3- save in db
@@ -35,7 +35,7 @@ const RegisterUser = async (req, res) => {
     await newUser.save();
 
     //* 4- generate token for email activation
-    generateAndSendActivationEmail(newUser);
+    await generateAndSendActivationEmail(newUser);
 
     //* 6- send success msg
     res.status(201).json({
@@ -72,11 +72,11 @@ const emailActivation = async (req, res) => {
 
     const decoded = verifyToken(
       token,
-      process.env.EMAIL_ACTIVATION_TOKEN_SECRET_KEY
+      process.env.EMAIL_ACTIVATION_TOKEN_SECRET_KEY,
     );
 
     //* 2- get the user and activate their email
-    const user = await User.findById({ _id: decoded.id });
+    const user = await User.findById(decoded.id);
 
     if (user && !user.isEmailActive) {
       user.isEmailActive = true;
@@ -128,7 +128,7 @@ const signIn = async (req, res) => {
     const token = generateToken(
       { email: user.email, id: user._id, role: user.role },
       process.env.USER_TOKEN_SECRET_KEY,
-      "7d"
+      "7d",
     );
 
     //* 4- send token in http-only cookie to prevent js access
@@ -202,7 +202,7 @@ const signInWithGoogle = async (req, res) => {
       const randomPassword = crypto.randomBytes(32).toString("hex"); // 64 characters
       const hashedPassword = await bcrypt.hash(
         randomPassword,
-        +process.env.USER_PASS_SALT_ROUNDS
+        +process.env.USER_PASS_SALT_ROUNDS,
       );
 
       newUser = new User({
@@ -222,7 +222,7 @@ const signInWithGoogle = async (req, res) => {
         role: user?.role || newUser?.role,
       },
       process.env.USER_TOKEN_SECRET_KEY,
-      "7d"
+      "7d",
     );
 
     //* 4- send token in http-only cookie to prevent js access
@@ -274,7 +274,7 @@ const logOut = async (req, res) => {
   const token = generateToken(
     { email: user.email, id: user._id, role: user.role },
     process.env.USER_TOKEN_SECRET_KEY,
-    "10s" // Token expires in 10 seconds
+    "10s", // Token expires in 10 seconds
   );
 
   res.cookie("token", token, {
