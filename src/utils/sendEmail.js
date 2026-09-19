@@ -204,10 +204,15 @@ export const orderDetailsHTMLContent = (order) => {
 
 //* create nodemailer transporter
 const transporter = createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.USER_NODE_MAILER_EMAIL,
     pass: process.env.USER_APP_NODE_MAILER_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
   },
 });
 
