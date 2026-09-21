@@ -25,7 +25,7 @@ export const generatePaymentKey = async (
   authToken,
   orderId,
   amountCents,
-  billingdata
+  billingdata,
 ) => {
   const response = await axios.post(`${baseURL}/acceptance/payment_keys`, {
     auth_token: authToken,
@@ -35,7 +35,7 @@ export const generatePaymentKey = async (
     billing_data: billingdata,
     currency: "EGP",
     integration_id: process.env.PAYMOB_INTEGRATION_ID,
-    return_url: `https://bubbli-gifts.netlify.app/order-confirmation/${orderId}`, // 👈 Redirects user here after payment
+    return_url: `${process.env.FRONT_URL}/order-confirmation/${orderId}`, // 👈 Redirects user here after payment
   });
 
   return response.data.token;
@@ -51,7 +51,7 @@ export const refundPaymob = async (transactionId, amountCents) => {
       "https://accept.paymob.com/api/auth/tokens",
       {
         api_key: process.env.PAYMOB_API_KEY,
-      }
+      },
     );
 
     const token = authResponse.data.token;
@@ -62,7 +62,7 @@ export const refundPaymob = async (transactionId, amountCents) => {
         auth_token: token,
         transaction_id: transactionId,
         amount_cents: amountCents,
-      }
+      },
     );
 
     if (refundResponse.data && refundResponse.data.success) {

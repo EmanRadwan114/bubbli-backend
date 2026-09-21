@@ -23,7 +23,7 @@ export const createOrder = async (req, res) => {
 
   try {
     const cart = await Cart.findOne({ userID: req.user.id }).populate(
-      "cartItems.productId"
+      "cartItems.productId",
     );
     if (!cart || cart.cartItems.length === 0) {
       return res.status(400).json({ message: "Your cart is empty" });
@@ -42,16 +42,20 @@ export const createOrder = async (req, res) => {
     }
 
     // Price calculation
-    let totalPriceBeforeDiscount = 0;
+    let totalPriceBeforeDiscount = 0; // sum of raw product prices (no discount)
+    let totalAfterProductDiscount = 0; // sum after applying per-product discount
     for (const item of cart.cartItems) {
       const product = item.productId;
       const discountedPrice =
         product.price * (1 - (product.discount || 0) / 100);
-      totalPriceBeforeDiscount += discountedPrice * item.quantity;
+      totalPriceBeforeDiscount += product.price * item.quantity;
+      totalAfterProductDiscount += discountedPrice * item.quantity;
     }
 
-    const totalPriceWithShipping =
-      totalPriceBeforeDiscount * (1 - couponDiscountPct / 100) + SHIPPING_PRICE;
+    // Apply coupon on top of product discounts, then add shipping
+    const totalPriceAfterDiscount =
+      totalAfterProductDiscount * (1 - couponDiscountPct / 100);
+    const totalPriceWithShipping = totalPriceAfterDiscount + SHIPPING_PRICE;
 
     const orderItems = cart.cartItems.map((i) => {
       const product = i.productId;
@@ -75,7 +79,7 @@ export const createOrder = async (req, res) => {
       couponCode: couponCode || null,
       shippingPrice: SHIPPING_PRICE,
       totalPriceBeforeDiscount,
-      totalPriceAfterDiscount: totalPriceWithShipping - SHIPPING_PRICE,
+      totalPriceAfterDiscount,
       totalPrice: totalPriceWithShipping,
       orderStatus: "waiting",
       shippingStatus: "pending",
@@ -93,7 +97,7 @@ export const createOrder = async (req, res) => {
       if (couponCode) {
         await Coupon.updateOne(
           { CouponCode: couponCode },
-          { $push: { CouponUsers: req.user.id } }
+          { $push: { CouponUsers: req.user.id } },
         );
       }
 
@@ -115,7 +119,7 @@ export const createOrder = async (req, res) => {
           totalPrice: totalPriceWithShipping,
           createdAt: order.createdAt,
           _id: order._id,
-        }
+        },
       );
 
       cart.cartItems = [];
@@ -158,13 +162,13 @@ export const createOrder = async (req, res) => {
       authToken,
       Math.round(+totalPriceWithShipping * 100),
       items,
-      order
+      order,
     );
     const paymentKey = await generatePaymentKey(
       authToken,
       paymobOrder.id,
       Math.round(+totalPriceWithShipping * 100),
-      billingData
+      billingData,
     );
     const iframeUrl = getIframeUrl(paymentKey);
 
@@ -196,7 +200,7 @@ export const createWebhook = async (req, res) => {
           orderStatus: "paid",
           transactionId: transactionId,
         },
-        { new: true }
+        { new: true },
       );
 
       if (!updatedOrder)
@@ -205,7 +209,7 @@ export const createWebhook = async (req, res) => {
       if (updatedOrder.couponCode) {
         await Coupon.updateOne(
           { CouponCode: updatedOrder.couponCode },
-          { $push: { CouponUsers: updatedOrder.userID } }
+          { $push: { CouponUsers: updatedOrder.userID } },
         );
       }
 
@@ -220,7 +224,7 @@ export const createWebhook = async (req, res) => {
 
       const user = await User.findById(updatedOrder.userID);
       const cart = await Cart.findOne({ userID: updatedOrder.userID }).populate(
-        "cartItems.productId"
+        "cartItems.productId",
       );
 
       if (cart) {
@@ -233,7 +237,7 @@ export const createWebhook = async (req, res) => {
             totalPrice: updatedOrder.totalPrice,
             createdAt: updatedOrder.createdAt,
             _id: updatedOrder._id,
-          }
+          },
         );
         cart.cartItems = [];
         await cart.save();
@@ -259,10 +263,10 @@ export const redirectAfterPayment = async (req, res) => {
 
   if (success === "true") {
     return res.redirect(
-      `https://bubbli-gifts.netlify.app/order-confirmation/${merchant_order_id}`
+      `${process.env.FRONT_URL}/order-confirmation/${merchant_order_id}`,
     );
   } else {
-    return res.redirect(`https://bubbli-gifts.netlify.app/payment-failed`);
+    return res.redirect(`${process.env.FRONT_URL}/payment-failed`);
   }
 };
 
@@ -568,7 +572,7 @@ export const cancelOrder = async (req, res) => {
 
       const refundResponse = await refundPaymob(
         order.transactionId,
-        Math.round(+order.totalPrice)
+        Math.round(+order.totalPrice * 100),
       );
       if (!refundResponse.success) {
         return res

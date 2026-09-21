@@ -60,7 +60,7 @@ const getUserCart = async (req, res, userID) => {
     //get cart with product data
     let cart = await Cart.findOne({ userID }).populate({
       path: "cartItems.productId",
-      select: "title thumbnail price material color stock",
+      select: "title thumbnail price discount material color stock",
     });
 
     if (!cart) return res.status(404).json({ message: "no cart for user" });
@@ -82,7 +82,9 @@ const getUserCart = async (req, res, userID) => {
     const subtotal = validCartItems.reduce((acc, item) => {
       const product = item.productId;
       if (!product) return acc;
-      return acc + product.price * item.quantity;
+      const discountedPrice =
+        product.price * (1 - (product.discount || 0) / 100);
+      return acc + discountedPrice * item.quantity;
     }, 0);
     const paginatedItems = validCartItems.slice(skip, skip + limit);
     const totalPages = Math.ceil(validCartItems.length / limit);
@@ -106,7 +108,7 @@ const getCartForCheckout = async (req, res, userID) => {
         .json({ message: "you are not authorized to get this content" });
     let cart = await Cart.findOne({ userID }).populate({
       path: "cartItems.productId",
-      select: "title thumbnail price material color stock",
+      select: "title thumbnail price discount material color stock",
     });
 
     if (!cart) return res.status(404).json({ message: "no cart for user" });
@@ -139,7 +141,7 @@ const updateCartItem = async (req, res, userID) => {
     //get cart of user
     let cart = await Cart.findOne({ userID }).populate({
       path: "cartItems.productId",
-      select: "title thumbnail price material color stock",
+      select: "title thumbnail price discount material color stock",
     });
     if (!cart) return res.status(404).json({ message: "no cart for user" });
 
@@ -166,7 +168,9 @@ const updateCartItem = async (req, res, userID) => {
     const subtotal = cart.cartItems.reduce((acc, item) => {
       const product = item.productId;
       if (!product) return acc;
-      return acc + product.price * item.quantity;
+      const discountedPrice =
+        product.price * (1 - (product.discount || 0) / 100);
+      return acc + discountedPrice * item.quantity;
     }, 0);
     res.status(200).json({
       message: "product in cart items updated successfully",
@@ -188,7 +192,7 @@ const deleteCartItem = async (req, res, userID) => {
 
     let cart = await Cart.findOne({ userID }).populate({
       path: "cartItems.productId",
-      select: "title thumbnail price material color stock",
+      select: "title thumbnail price discount material color stock",
     });
     if (!cart) return res.status(404).json({ message: "no cart for user" });
 
@@ -218,7 +222,9 @@ const deleteCartItem = async (req, res, userID) => {
     const subtotal = cart.cartItems.reduce((acc, item) => {
       const product = item.productId;
       if (!product) return acc;
-      return acc + product.price * item.quantity;
+      const discountedPrice =
+        product.price * (1 - (product.discount || 0) / 100);
+      return acc + discountedPrice * item.quantity;
     }, 0);
     res.status(200).json({
       message: "product in cart items removed successfully",
