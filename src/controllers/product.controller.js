@@ -20,7 +20,8 @@ const getAllProducts = async (req, res) => {
         .limit(limit);
     }
     if (products.length === 0) {
-      res.status(200).json({ message: "no products found" });
+      // BUG FIX: added return to prevent double-response crash
+      return res.status(200).json({ message: "no products found" });
     }
     res.status(200).json({
       message: "success",
@@ -35,9 +36,11 @@ const getAllProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
   try {
-    let product = await Product.find({ _id: req.params.id });
+    // BUG FIX: use findById() instead of find() — find() always returns an array
+    // and never null, so the !product check was always false
+    let product = await Product.findById(req.params.id);
     if (!product) {
-      res.status(404).json({ message: "product not found" });
+      return res.status(404).json({ message: "product not found" });
     }
     res.status(200).json({ message: "success", data: product });
   } catch (err) {
@@ -68,7 +71,8 @@ const getProductsByCategory = async (req, res) => {
       .skip(skip);
 
     if (products.length === 0) {
-      res.status(200).json({ message: "no products found" });
+      // BUG FIX: added return to prevent double-response crash
+      return res.status(200).json({ message: "no products found" });
     }
     res.status(200).json({
       message: "success",
@@ -91,7 +95,8 @@ const getProductsByLabel = async (req, res) => {
       createdAt: -1,
     });
     if (products.length === 0) {
-      res.status(200).json({ message: "no products found" });
+      // BUG FIX: added return to prevent double-response crash
+      return res.status(200).json({ message: "no products found" });
     }
     res.status(200).json({ message: "success", data: products });
   } catch (err) {
@@ -114,7 +119,8 @@ const updateProduct = async (req, res) => {
   try {
     let product = await Product.findById(req.params.id);
     if (!product) {
-      res.status(404).json({ message: "product not found" });
+      // BUG FIX: added return to prevent double-response crash
+      return res.status(404).json({ message: "product not found" });
     }
     //This for partial update
     Object.keys(req.body).forEach((key) => {
@@ -133,7 +139,8 @@ const deleteProduct = async (req, res) => {
   try {
     let product = await Product.findByIdAndDelete(req.params.id);
     if (!product) {
-      res.status(404).json({ message: "product not found" });
+      // BUG FIX: added return to prevent double-response crash
+      return res.status(404).json({ message: "product not found" });
     }
     res.status(200).json({ message: "product deleted successfully" });
   } catch (err) {
@@ -144,6 +151,11 @@ const deleteProduct = async (req, res) => {
 //^-------------------------------Search Product--------------------------------
 const searchProduct = async (req, res) => {
   try {
+    // BUG FIX: guard against missing query param — was crashing with TypeError
+    if (!req.query.q || !req.query.q.trim()) {
+      return res.status(400).json({ message: "please provide a search query" });
+    }
+
     let query = req.query.q.toLowerCase();
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 6;
@@ -158,6 +170,8 @@ const searchProduct = async (req, res) => {
       .map((term) => term.trim())
       .filter((term) => term.length > 0);
 
+    // BUG FIX: use $and instead of $or so ALL search terms must match,
+    // not just any one of them. Each element is an $or across fields for that term.
     const searchQuery = searchTerms.map((term) => ({
       $or: [
         { title: { $regex: term, $options: "i" } },
@@ -167,10 +181,12 @@ const searchProduct = async (req, res) => {
       ],
     }));
 
-    const total = await Product.countDocuments({ $or: searchQuery });
+    const mongoQuery = searchQuery.length > 0 ? { $and: searchQuery } : {};
+
+    const total = await Product.countDocuments(mongoQuery);
     const totalPages = Math.ceil(total / limit);
 
-    const searchedProducts = await Product.find({ $or: searchQuery })
+    const searchedProducts = await Product.find(mongoQuery)
       .populate("categoryID")
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -204,11 +220,12 @@ const filterProducts = async (req, res) => {
 
     // Handle title filter (combined from multiple frontend checkboxes)
     if (title) {
-      // Split the comma-separated title string into individual filters
+      // BUG FIX: split on comma with optional surrounding spaces via regex
+      // so both "balloon, birthday" and "balloon,birthday" are handled correctly
       const titleFilters = title
-        .split(", ")
-        .map((filter) => filter.toLowerCase());
-      console.log(title);
+        .split(/,\s*/)
+        .map((filter) => filter.trim().toLowerCase())
+        .filter((f) => f.length > 0);
 
       // Create an OR condition for each title filter
       filterQuery.$or = [

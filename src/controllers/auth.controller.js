@@ -275,27 +275,16 @@ const resetPassword = (req, res) => {}; //additional feature
 
 // ^----------------------------------LogOut--------------------------
 const logOut = async (req, res) => {
-  const id = req.user.id;
-
-  const user = await User.findById(id).select("name email role");
-
-  const token = generateToken(
-    { email: user.email, id: user._id, role: user.role },
-    process.env.USER_TOKEN_SECRET_KEY,
-    "10s", // Token expires in 10 seconds
-  );
-
-  res.cookie("token", token, {
+  // Clear the cookie by using the exact same options used when setting it.
+  // sameSite, secure, and path must all match for the browser to remove it.
+  res.clearCookie("token", {
     httpOnly: true,
-    sameSite: "none", // Change from "none" to "lax" for development
-    secure: true, // Keep false for HTTP in development
-    maxAge: 10000,
+    sameSite: "none",
+    secure: true,
     path: "/",
   });
 
-  res
-    .status(200)
-    .json({ message: "user is logged out successfully", data: user });
+  res.status(200).json({ message: "user is logged out successfully" });
 };
 
 export default {
