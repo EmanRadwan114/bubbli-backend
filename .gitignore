@@ -1,2 +1,9 @@
 node_modules
 .env
+
+# Markdown documentation files
+*.md
+
+# Utility/seed scripts
+seed.js
+verify.js
