@@ -41,7 +41,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 
 // ?handle form submissions (application/x-www-form-urlencoded)
@@ -70,7 +70,7 @@ app.use("/", chatbotRouter);
 app.get(
   "/admins/dashboard-stats",
   authenticate([systemRoles.admin]),
-  getAdminStats
+  getAdminStats,
 );
 
 // ^------------------error handling
@@ -85,7 +85,7 @@ app.use(globalErrHandler);
 
 mongoose
   .connect(process.env.MONGODB_CONNECTION_URL, {
-    dbName: "bubbli",
+    dbName: "gift-store",
   })
   .then(() => {
     console.log("Database connected successfully.");
